@@ -1,5 +1,3 @@
-// OrderNow.js
-
 import React, { useState } from "react";
 import FoodImage1 from "../Assets/food-image1.jpg";
 import FoodImage2 from "../Assets/food-image2.jpg";
@@ -10,8 +8,9 @@ import FoodImage6 from "../Assets/food-image6.jpg";
 import FoodImage7 from "../Assets/food-image7.jpg";
 import FoodImage8 from "../Assets/food-image8.jpg";
 
-const OrderNow = ({ setCartCount }) => {
+const OrderNow = () => {
   const [cart, setCart] = useState([]);
+  const [cartCount, setCartCount] = useState(0); // Local state for cart count
 
   const foodItems = [
     {
@@ -72,15 +71,58 @@ const OrderNow = ({ setCartCount }) => {
     },
   ];
 
-  const addToCart = (item) => {
-    setCart([...cart, item]);
-    setCartCount(cart.length + 1);
+  const addToCart = async (item) => {
+    try {
+      const response = await fetch("http://localhost:5000/api/cart/add", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(item),
+      });
+
+      if (response.ok) {
+        const updatedCart = await response.json();
+        setCart(updatedCart);
+        setCartCount(updatedCart.length); // Update cart count based on cart length
+      }
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+    }
   };
- 
+
+  const handleOrder = async () => {
+    try {
+      const response = await fetch("http://localhost:5000/api/order", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ cartItems: cart, totalPrice: calculateTotalPrice() }),
+      });
+
+      if (response.ok) {
+        alert("Order placed successfully!");
+        setCart([]); // Clear the cart after successful order
+        setCartCount(0); // Reset cart count
+      } else {
+        const errorData = await response.json();
+        alert(`Error placing order: ${errorData.message}`);
+      }
+    } catch (error) {
+      console.error("Error placing order:", error);
+      alert("An error occurred while placing your order. Please try again.");
+    }
+  };
+
+  const calculateTotalPrice = () => {
+    return cart.reduce((total, item) => total + item.price, 0).toFixed(2); // Assuming quantity is not needed
+  };
+
   return (
     <div className="order-now-container">
       <h1>Order Now</h1>
-
+     
       <div className="food-items">
         {foodItems.map((item) => (
           <div className="food-item" key={item.id}>
@@ -97,4 +139,3 @@ const OrderNow = ({ setCartCount }) => {
 };
 
 export default OrderNow;
-
